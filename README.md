@@ -13,6 +13,7 @@
      - GWN &#8594; User
      - Sensor &#8594; GWN
      - GWN &#8594; Sensor
+     ![Image description](SNS_ASS2_Registration_Steps.png)
   2. Login
      - User &#8594; Sensor
   3. Authentication
