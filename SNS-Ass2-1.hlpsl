@@ -60,9 +60,11 @@ transition
 2.	State = 2 /\ RCV({MI'.E'.F'.XGwnU'}_S) =|> 
 		State' := 3 /\ SC' := R.MI'.E'.F'.XGwnU'
 
+% User sends login request to server
 3.	State = 4 /\ RCV(start) =|>
 		State' := 5 /\ T1' := new() /\ X' := xor(F,E) /\ 			Ni' := H(X.XGwnU.T1') /\ Ki' := new() /\ Zi' := xor(Ki', F) /\ SND({MI.E.Zi'.Ni'.T1'}_S) /\ witness(A,C,user_sensor_t1, T1')
 
+% User agree on a key using information it receives from Sensor (after interacting with GWN)
 4.	State = 6 /\ RCV({H(H(xor(H(H(R'.ID').XGwn'),H(H(R'.PWD').XGwnU')).XGwnU.T1).T1.T2'.T3').xor(H(xor(xor(H(H(R'.ID').XGwn'),H(H(SenID'.XGwn').XGwnS')), H(F'.XGwnS')).SenID'.T1.T2'.T3'.T4'),Kj').T1.T2'.T3'.T4'}_S) =|>
 		State' := 7 /\ request(A, C, sensor_user_t4, T4') /\ Kj' := xor(xor(H(xor(xor(H(H(R'.ID').XGwn'),H(H(SenID'.XGwn').XGwnS')), H(F'.XGwnS')).SenID'.T1.T2'.T3'.T4'),Kj'),H(F.SenID.T1.T2.T3.T4)) /\ SK' := H(xor(Ki,Kj'))
 
@@ -131,13 +133,15 @@ transition
 		State' := 1 /\ R' := new() /\ T1' := new() /\ MP' := H(S.R'.SenID) /\ MN' := xor(R,S) /\ RMP' := xor(MP,MN) /\ SND({SenID.RMP.MN.T1}_S)
 		/\ witness(C,B, sensor_server_r, R)
 
-% User receives smartcard from the server and stores it locally along with password 
+% Sensor gets back hashes of concateation of passwords which it has to store for authentication phase
 2.	State = 2 /\ RCV({xor(H(SenID.XGwn'),H(H(S.R'.SenID).S)).H(SenID.XGwn').T2'}_S) =|> 
 		State' := 3 /\ Rec_E' := xor(H(SenID.XGwn'),H(H(S.R'.SenID).S)) /\ Rec_F' := H(SenID.XGwn')
 
+% It relays a modified auth request to GWN to perform authentication with Sensor
 3.	State = 4 /\ RCV(H(R'.ID').Ei'.xor(Ki, F').H(xor(F',Ei').XGwnU'.T1').T1') =|> 
 		State' := 5 /\ request(C,A,user_sensor_t1, T1') /\ X' := xor(Ei',F') /\ T2' := new() /\ Aj' := xor(H(XGwnS.T1'.T2'),X') /\ SND({H(R'.ID').Ei'.H(xor(F',Ei').XGwnU'.T1').T1'.T2'.SenID.Rec_E.Aj}_S) /\ witness(C,B,sensor_server_t2, T2')
 
+% Based on the response data of GWN, it sends back values to Sensor for authentication.
 4.	State = 6 /\ RCV({xor(H(H(R'.ID').XGwn'),H(H(SenID'.XGwn).XGwnS)).H(H(SenID'.XGwn).XGwnS.T1.T2.T3').H(H(xor(H(H(R'.ID').XGwn'),H(H(R'.PWD').XGwnU')).XGwnU.T1).T1.T2.T3').T1.T2.T3'}_S) =|> 
 		State' := 7 /\ request(C, B, server_sensor_t3, T3') /\ Fi' := xor(xor(H(H(R'.ID').XGwn'),H(H(SenID'.XGwn).XGwnS)), H(F.XGwnS)) /\ K2i' := xor(xor(Ki, F),Fi) /\ Kj' := new() /\ T4':= new() /\ Rij' := xor(H(Fi.SenID.T1.T2.T3.T4),Kj) /\ SK' := H(K2i.Kj) /\ SND({H(H(xor(H(H(R'.ID').XGwn'),H(H(R'.PWD').XGwnU')).XGwnU.T1).T1.T2.T3').Rij.T1.T2.T3.T4}_S) /\ witness(C, A, sensor_user_t4, T4) 
 
@@ -206,10 +210,12 @@ transition
 1.	State = 1 /\ RCV(H(R'.ID').H(R'.PWD')) =|> 
 		State' := 3 /\ XGwn' := new() /\ XGwnU' := new() /\ F' := H(H(R'.ID').XGwn') /\ X' := H(H(R'.PWD').XGwnU') /\ E' := xor(F',X')/\SND({H(R'.ID').E'.F'.XGwnU'}_S) 
 
+% Sensor requests for authentication data based on the request it received from user
 2.	State = 4 /\ RCV({SenID'.xor(H(S.R'.SenID').xor(R',S)).xor(R',S).T1'}_S) =|>
 		State' := 5   /\
 			 MP' := xor(xor(H(S.R.SenID').xor(R,S)),xor(R,S)) /\ R3' := xor(xor(R,S),S) /\ MP2' := H(S.R3.SenID') /\ F2' := H(SenID'.XGwn) /\ X2' := H(MP2.S) /\ E2' := xor(F2,X2) /\ 						 SND({E2.F2.T2}_S) /\ request(B,A, sensor_server_r, R)
 
+% Server sends final authentication related data to sensor to complete user authentication
 3.	State = 6 /\ RCV({H(R'.ID').Ei'.H(xor(F',Ei').XGwnU.T1').T1'.T2'.SenID'.E'.A}_S) =|>
 		State' := 7 /\ request(B,C,sensor_server_t2, T2') 			/\ Qi' := H(E.XGwnU.T1) /\ Fij' := xor(F,H(F2.XGwnS)) /\ 		T3' := new() /\ Hj' := H(F2.XGwnS.T1.T2.T3) /\ Si' := H(Qi.T1.T2.T3) /\ SND({Fij.Hj.Si.T1.T2.T3}_S) /\ witness(B, C, server_sensor_t3, T3) 	   		
 						
