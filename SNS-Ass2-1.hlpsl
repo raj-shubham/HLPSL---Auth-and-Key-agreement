@@ -1,0 +1,279 @@
+% --------------------------------------------------------------------------------
+% Author -	@Shubham Raj
+% Roll	-	2019701011
+% --------------------------------------------------------------------------------
+
+% User role
+% --------------------------------------------------------------------------------
+
+role user (
+	A, B, C : agent,
+	% A is the user and B is the server
+	H : hash_func,
+	% H is a cryptographic hash function
+	S: symmetric_key,
+	SND, RCV : channel(dy)
+	% Dolev Yao model channels 
+)
+
+played_by A 
+
+def=
+
+local
+	State : nat,	% Transition state
+	R : text,		% Secret nonce
+	ID : text, 		% User ID chosen randomly
+	PWD : text,		% Password of the user
+	MP: text,		% Hash of R||PWD
+	MI: text,		% Hash of R||ID
+	E: text,		% FxorX
+	F: text,		% Hash of MI||XGwn
+	X: text,
+	XGwnU: text,
+	XGwn: text,
+	XGwnS: text,
+	SenID: text,
+	Ni: text,
+	Ki: text,
+	Kj: text,
+	Zi: text,
+	T1: text,
+	T2: text,
+	T3: text,
+	T4: text,
+	SK: text,
+	SC: text
+
+
+init 
+	State := 0
+
+transition
+
+% Registration initiated by user - sends ID to GWN 
+0.	State = 0 /\ RCV(start) =|> 
+		State' := 1 /\ R' := new() /\ PWD' := new() /\ MP' := H(R'.PWD') /\ MI' := H(R'.ID) /\ SND({MI'.MP'}_S)
+		/\ secret(PWD', reg_1, {A})
+
+% User receives smartcard from the server and stores it locally along with password 
+2.	State = 2 /\ RCV({MI'.E'.F'.XGwnU'}_S) =|> 
+		State' := 3 /\ SC' := R.MI'.E'.F'.XGwnU'
+
+3.	State = 4 /\ RCV(start) =|>
+		State' := 5 /\ T1' := new() /\ X' := xor(F,E) /\ 			Ni' := H(X.XGwnU.T1') /\ Ki' := new() /\ Zi' := xor(Ki', F) /\ SND({MI.E.Zi'.Ni'.T1'}_S) /\ witness(A,C,user_sensor_t1, T1')
+
+4.	State = 6 /\ RCV({H(H(xor(H(H(R'.ID').XGwn'),H(H(R'.PWD').XGwnU')).XGwnU.T1).T1.T2'.T3').xor(H(xor(xor(H(H(R'.ID').XGwn'),H(H(SenID'.XGwn').XGwnS')), H(F'.XGwnS')).SenID'.T1.T2'.T3'.T4'),Kj').T1.T2'.T3'.T4'}_S) =|>
+		State' := 7 /\ request(A, C, sensor_user_t4, T4') /\ Kj' := xor(xor(H(xor(xor(H(H(R'.ID').XGwn'),H(H(SenID'.XGwn').XGwnS')), H(F'.XGwnS')).SenID'.T1.T2'.T3'.T4'),Kj'),H(F.SenID.T1.T2.T3.T4)) /\ SK' := H(xor(Ki,Kj'))
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 	
+		
+end role
+
+% --------------------------------------------------------------------------------
+
+% User role
+% --------------------------------------------------------------------------------
+
+role sensor (
+	A, B, C : agent,
+	% A is the user and B is the server
+	H : hash_func,
+	% H is a cryptographic hash function
+	S: symmetric_key,
+	SND, RCV : channel(dy)
+	% Dolev Yao model channels 
+)
+
+played_by C 
+
+def=
+
+local
+	State : nat,	% Transition state
+	R : text,		% Secret nonce
+	SenID : text, 		% sensor ID chosen randomly
+	MP : text,		% Hash of XGwnS||R||SID
+	MN: text,		% XOR of R,XGwnS
+	RMP: text,		% XOR of MP,MN
+	ID: text,
+	Aj: text,
+	PWD: text,
+	XGwnU: text,
+	T1: text,
+	TC: text,
+	T2: text,
+	T3: text,
+	T4: text,
+	E: text,
+	Ei: text,
+	Ki: text,
+	K2i: text,
+	Kj: text,
+	Rij: text,
+	SK: text,
+	F: text,
+	Fi: text,
+	Rec_E: text,
+	Rec_F: text,
+	X: text,
+	XGwnS: text,
+	XGwn: text
+
+
+init 
+	State := 0
+
+transition
+
+% Registration initiated by Sensor - sends ID to GWN 
+0.	State = 0 /\ RCV(start) =|> 
+		State' := 1 /\ R' := new() /\ T1' := new() /\ MP' := H(S.R'.SenID) /\ MN' := xor(R,S) /\ RMP' := xor(MP,MN) /\ SND({SenID.RMP.MN.T1}_S)
+		/\ witness(C,B, sensor_server_r, R)
+
+% User receives smartcard from the server and stores it locally along with password 
+2.	State = 2 /\ RCV({xor(H(SenID.XGwn'),H(H(S.R'.SenID).S)).H(SenID.XGwn').T2'}_S) =|> 
+		State' := 3 /\ Rec_E' := xor(H(SenID.XGwn'),H(H(S.R'.SenID).S)) /\ Rec_F' := H(SenID.XGwn')
+
+3.	State = 4 /\ RCV(H(R'.ID').Ei'.xor(Ki, F').H(xor(F',Ei').XGwnU'.T1').T1') =|> 
+		State' := 5 /\ request(C,A,user_sensor_t1, T1') /\ X' := xor(Ei',F') /\ T2' := new() /\ Aj' := xor(H(XGwnS.T1'.T2'),X') /\ SND({H(R'.ID').Ei'.H(xor(F',Ei').XGwnU'.T1').T1'.T2'.SenID.Rec_E.Aj}_S) /\ witness(C,B,sensor_server_t2, T2')
+
+4.	State = 6 /\ RCV({xor(H(H(R'.ID').XGwn'),H(H(SenID'.XGwn).XGwnS)).H(H(SenID'.XGwn).XGwnS.T1.T2.T3').H(H(xor(H(H(R'.ID').XGwn'),H(H(R'.PWD').XGwnU')).XGwnU.T1).T1.T2.T3').T1.T2.T3'}_S) =|> 
+		State' := 7 /\ request(C, B, server_sensor_t3, T3') /\ Fi' := xor(xor(H(H(R'.ID').XGwn'),H(H(SenID'.XGwn).XGwnS)), H(F.XGwnS)) /\ K2i' := xor(xor(Ki, F),Fi) /\ Kj' := new() /\ T4':= new() /\ Rij' := xor(H(Fi.SenID.T1.T2.T3.T4),Kj) /\ SK' := H(K2i.Kj) /\ SND({H(H(xor(H(H(R'.ID').XGwn'),H(H(R'.PWD').XGwnU')).XGwnU.T1).T1.T2.T3').Rij.T1.T2.T3.T4}_S) /\ witness(C, A, sensor_user_t4, T4) 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 	
+		
+end role
+
+
+
+% Server role
+% --------------------------------------------------------------------------------
+
+role server (
+	A, B, C : agent,
+	% A is the user and B is the server
+	H : hash_func,
+	% H is a cryptographic hash function
+	S: symmetric_key,
+	SND, RCV : channel(dy)
+)
+
+played_by B
+
+def=
+
+local 
+	State : nat,	% Transition state
+	MP : text,		% Client PWD Hash
+	MP2: text,
+	MI : text,		% User identifier Hash
+	SD : text, 		% Smart card ID
+	X  : text,		% MP||XGwnU
+	X2 : text,
+	E: text,		% FxorX
+	E2: text,
+	Ei: text,
+	F2 : text,
+	F: text,		% Hash of MI||XGwn
+	ID: text,
+	R: text,
+	R2: text,
+	R3: text,
+	PWD: text,
+	XGwn: text,
+	XGwnU: text,
+	XGwnS: text,
+	SenID: text,
+	T1: text,
+	T2: text,
+	T3: text,
+	TC: text,
+	DeltaT: text,
+	Fsensor: text,
+	Qi: text,
+	Fij: text,
+	Hj: text,
+	Si: text,
+	SC: text
+
+init
+	State := 1
+
+transition
+
+% Server receives request from user for registration
+1.	State = 1 /\ RCV(H(R'.ID').H(R'.PWD')) =|> 
+		State' := 3 /\ XGwn' := new() /\ XGwnU' := new() /\ F' := H(H(R'.ID').XGwn') /\ X' := H(H(R'.PWD').XGwnU') /\ E' := xor(F',X')/\SND({H(R'.ID').E'.F'.XGwnU'}_S) 
+
+2.	State = 4 /\ RCV({SenID'.xor(H(S.R'.SenID').xor(R',S)).xor(R',S).T1'}_S) =|>
+		State' := 5   /\
+			 MP' := xor(xor(H(S.R.SenID').xor(R,S)),xor(R,S)) /\ R3' := xor(xor(R,S),S) /\ MP2' := H(S.R3.SenID') /\ F2' := H(SenID'.XGwn) /\ X2' := H(MP2.S) /\ E2' := xor(F2,X2) /\ 						 SND({E2.F2.T2}_S) /\ request(B,A, sensor_server_r, R)
+
+3.	State = 6 /\ RCV({H(R'.ID').Ei'.H(xor(F',Ei').XGwnU.T1').T1'.T2'.SenID'.E'.A}_S) =|>
+		State' := 7 /\ request(B,C,sensor_server_t2, T2') 			/\ Qi' := H(E.XGwnU.T1) /\ Fij' := xor(F,H(F2.XGwnS)) /\ 		T3' := new() /\ Hj' := H(F2.XGwnS.T1.T2.T3) /\ Si' := H(Qi.T1.T2.T3) /\ SND({Fij.Hj.Si.T1.T2.T3}_S) /\ witness(B, C, server_sensor_t3, T3) 	   		
+						
+end role	
+
+% --------------------------------------------------------------------------------
+
+
+% Session role
+% --------------------------------------------------------------------------------
+
+role session (
+	A, B, C : agent,
+	% A is the user and B is the server
+	H : hash_func,
+	% H is a cryptographic hash function
+	S : symmetric_key
+)
+
+def=
+
+local 
+	SAB, RAB, SBA, RBA, SBC, RBC : channel(dy)
+
+composition
+	user(A, B, C, H, S, SAB, RAB) /\ server(A, B, C, H, S, SBA, RBA) /\ sensor (A, B, C ,H ,S, SBC, RBC)
+
+end role
+
+% --------------------------------------------------------------------------------
+
+
+% Environment role
+% --------------------------------------------------------------------------------
+
+role environment()
+
+def=
+
+const 
+	reg_1, reg_2, sensor_server_r, sensor_server_t2, user_sensor_t1, server_sensor_t3, sensor_user_t4 : protocol_id,
+	a, b, c : agent,
+	h : hash_func,
+	sab, sai, sbi : symmetric_key
+	
+intruder_knowledge = {a, b, c, h}
+
+composition
+	session(a, b, c, h, sab)  
+	/\ session(a, b, c, h, sab) 
+	/\ session(a, b, i, h, sai) 
+	/\ session(i, b, c, h, sbi)
+	 
+end role
+
+% --------------------------------------------------------------------------------
+
+% Goals
+% --------------------------------------------------------------------------------
+
+goal
+	secrecy_of reg_1, reg_2
+	authentication_on sensor_server_r, user_sensor_t1, sensor_server_t2, server_sensor_t3, sensor_user_t4
+end goal
+
+% --------------------------------------------------------------------------------
+environment()
