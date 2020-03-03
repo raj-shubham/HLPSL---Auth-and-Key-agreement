@@ -45,3 +45,51 @@
   3. Authentication is secure 
   4. Replay attacks are ineffective
   5. M.I.T.M attacks are ineffective
+
+### OFMC Output:
+```bash
+% OFMC
+% Version of 2006/02/13
+SUMMARY
+  SAFE
+DETAILS
+  BOUNDED_NUMBER_OF_SESSIONS
+PROTOCOL
+  /home/span/span/testsuite/results/SNS-Ass2-1.if
+GOAL
+  as_specified
+BACKEND
+  OFMC
+COMMENTS
+STATISTICS
+  parseTime: 0.00s
+  searchTime: 1.75s
+  visitedNodes: 1024 nodes
+  depth: 10 plies
+```
+
+### CL-AtSe Output:
+```bash
+SUMMARY
+  SAFE
+
+DETAILS
+  BOUNDED_NUMBER_OF_SESSIONS
+  TYPED_MODEL
+
+PROTOCOL
+  /home/span/span/testsuite/results/SNS-Ass2-1.if
+
+GOAL
+  As Specified
+
+BACKEND
+  CL-AtSe
+
+STATISTICS
+
+  Analysed   : 0 states
+  Reachable  : 0 states
+  Translation: 0.04 seconds
+  Computation: 0.00 seconds
+```
